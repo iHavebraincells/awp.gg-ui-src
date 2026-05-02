@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>AWP</title>
+<script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Inter,'Segoe UI',sans-serif;overflow:hidden;width:100%;height:100%;background:#1f1f1f;}
+button{font-family:inherit;cursor:pointer;}
+input{font-family:inherit;}
+iconify-icon{display:inline-flex;align-items:center;justify-content:center;}
+
+.resize-handle{position:fixed;z-index:9000;}
+.resize-n{top:0;left:6px;right:6px;height:4px;cursor:n-resize;}
+.resize-s{bottom:0;left:6px;right:6px;height:4px;cursor:s-resize;}
+.resize-w{left:0;top:6px;bottom:6px;width:4px;cursor:w-resize;}
+.resize-e{right:0;top:6px;bottom:6px;width:4px;cursor:e-resize;}
+.resize-nw{top:0;left:0;width:8px;height:8px;cursor:nw-resize;}
+.resize-ne{top:0;right:0;width:8px;height:8px;cursor:ne-resize;}
+.resize-sw{bottom:0;left:0;width:8px;height:8px;cursor:sw-resize;}
+.resize-se{bottom:0;right:0;width:8px;height:8px;cursor:se-resize;}
+
+.page-container{position:fixed;inset:0;display:flex;flex-direction:column;background:#1f1f1f;border-radius:4px;border:1px solid #424040;overflow:hidden;}
+.title-bar{width:100%;flex-shrink:0;display:flex;justify-content:space-between;align-items:center;padding:10px 0 6px;user-select:none;}
+.title-bar .heading{height:100%;display:flex;align-items:center;gap:10px;padding:0 12px;}
+.branding{color:#fff;font-size:16px;font-weight:800;letter-spacing:.8px;}
+.branding .dot{color:#6a6a6a;}
+.sep{width:2px;height:16px;background:#6a6a6a;border-radius:60px;}
+.dd-btn{display:flex;align-items:center;gap:6px;border:none;background:transparent;color:#c5c5c5;cursor:pointer;position:relative;padding:0;}
+.dd-btn:focus{outline:none;}
+.dd-btn .lbl{color:#c5c5c5;font-size:12px;font-weight:600;padding-top:2px;}
+.dd-btn .caret{color:#c5c5c5;transition:transform .25s;}
+.dd-btn[data-state=open] .caret{transform:rotate(-180deg);}
+.logout-btn{background:transparent;border:none;color:#6a6a6a;display:flex;align-items:center;width:22px;height:22px;border-radius:4px;transition:background .2s,color .2s;cursor:pointer;}
+.logout-btn:hover{background:#282828;color:#c5c5c5;}
+.win-ctrls{padding:0 12px;display:flex;align-items:center;gap:12px;}
+.ctrl{width:24px;height:24px;display:flex;align-items:center;justify-content:center;border:none;background:transparent;padding:2px;border-radius:4px;color:#c5c5c5;transition:background-color .2s,color .2s;cursor:pointer;}
+.ctrl:focus{outline:none;}
+.ctrl:hover{background:#282828;color:#f8f8f8;}
+.ctrl.close:hover{background:#c0392b;color:#fff;}
+.ctrl svg{width:11px;height:11px;}
+.dd-menu{position:absolute;top:calc(100% + 4px);left:0;background:#1f1f1f;border:1px solid #2c2c2c;border-radius:4px;box-shadow:0 5px 12px rgba(0,0,0,.4);display:none;flex-direction:column;gap:2px;padding:3px;z-index:500;min-width:130px;}
+.dd-menu.open{display:flex;animation:ddIn .15s ease;}
+@keyframes ddIn{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);}}
+.dd-item{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:3px;color:gray;cursor:pointer;background:none;border:none;text-align:left;transition:background .15s,color .15s;width:100%;}
+.dd-item:hover{background:#282828;color:#c5c5c5;}
+.dd-item[data-active=true]{background:#282828;color:#c5c5c5;}
+.dd-item .itm{font-size:12px;}
+
+.content-area{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;}
+.script-area{flex:1;display:flex;width:100%;min-height:0;}
+.editor-wrap{flex:1;min-width:0;max-width:calc(100vw - 190px);display:flex;flex-direction:column;height:100%;}
+.panel-group{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;}
+
+.tab-bar{width:100%;border-bottom:1px solid #2c2c2c;gap:3px;padding:0 0 3px 3px;box-sizing:border-box;display:flex;flex-wrap:nowrap;align-items:flex-end;overflow-x:auto;overflow-y:hidden;flex-shrink:0;}
+.tab-bar::-webkit-scrollbar{height:2px;}
+.tab-bar::-webkit-scrollbar-thumb{background:#3a3a3a;border-radius:2px;}
+.tab-bar .new-tab-btn{padding:4px;border-radius:4px;transition:background-color .2s;background:none;border:none;color:#6a6a6a;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.tab-bar .new-tab-btn:hover{background:#282828;color:#c5c5c5;}
+.tab{align-self:center;width:150px;min-width:150px;flex-shrink:0;display:flex;align-items:center;box-sizing:border-box;padding:5px;gap:6px;border-radius:4px;transition:background-color .2s,color .2s,border .2s;user-select:none;cursor:pointer;}
+.tab:hover{background:#282828;}
+.tab-title{font-size:13px;font-weight:400;padding-bottom:1px;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tab-rename-input{font-size:13px;font-weight:400;width:100%;background:transparent;border:none;outline:none;color:#c5c5c5;font-family:inherit;padding:0;}
+.close-tab{border-radius:4px;padding:2px;display:flex;align-items:center;background:none;border:none;color:gray;transition:color .2s;cursor:pointer;flex-shrink:0;}
+.close-tab svg{width:10px;height:10px;}
+.close-tab:hover{color:#c5c5c5;background:#353535;}
+.tab[data-active=true]{background-color:#282828;border:1px solid #2c2c2c;color:#c5c5c5;}
+.tab[data-active=false]{border:1px solid transparent;color:gray;}
+
+.text-editor{flex:1;width:100%;min-height:0;background:#191818;display:flex;flex-direction:column;overflow:hidden;}
+.editor-container{flex:1;width:100%;position:relative;overflow:hidden;}
+.editor-container::after{content:'';position:absolute;inset:0;box-shadow:0 5px 12px rgba(0,0,0,.25) inset;z-index:10;pointer-events:none;}
+.line-nums{position:absolute;top:0;left:0;bottom:0;width:42px;padding:8px 8px 8px 0;color:#484848;font-size:12px;font-family:'Cascadia Code','Fira Code',Consolas,monospace;line-height:1.6;text-align:right;overflow:hidden;user-select:none;white-space:pre;background:#191818;border-right:1px solid #1e1e1e;z-index:2;}
+#hl-pre{position:absolute;inset:0;padding:8px 10px 8px 50px;font-family:'Cascadia Code','Fira Code',Consolas,monospace;font-size:12.5px;line-height:1.6;tab-size:4;white-space:pre-wrap;word-break:break-all;overflow:hidden;pointer-events:none;color:#d4d4d4;background:transparent;margin:0;border:0;z-index:1;}
+.lk{color:#c678dd;}.ls{color:#98c379;}.lc{color:#5c6370;font-style:italic;}.ln{color:#d19a66;}.lf{color:#61afef;}.lb{color:#e5c07b;}
+#editor-area{position:absolute;inset:0;padding:8px 10px 8px 50px;background:transparent;border:none;outline:none;resize:none;color:transparent;caret-color:#abb2bf;font-family:'Cascadia Code','Fira Code',Consolas,monospace;font-size:12.5px;line-height:1.6;tab-size:4;white-space:pre-wrap;word-break:break-all;z-index:3;}
+#editor-area::selection{background:rgba(100,130,255,.35);}
+
+.editor-toolbar{box-sizing:border-box;padding:6px 10px 6px 3px;width:100%;display:flex;align-items:center;background:#1f1f1f;gap:3px;flex-shrink:0;}
+.btn{background-color:#28282899;color:gray;padding:5px 10px;border:1px solid rgba(44,44,44,.6);border-radius:4px;transition:background-color .2s,color .2s;display:flex;align-items:center;gap:6px;cursor:pointer;}
+.btn span{margin-top:2px;font-size:12px;}
+.btn:hover{background-color:#31313199;color:#8d8d8d;}
+.btn:disabled{background-color:#28282899;color:#80808099;cursor:not-allowed;}
+.btn[data-active=true]{background-color:#282828;}
+.btn[data-active=true]:hover{background-color:#353535;color:#8d8d8d;}
+.tb-sep{flex:1;}
+.proc-btns{display:flex;gap:8px;align-items:center;}
+.icon-btn{border:none;background:transparent;padding:4px;border-radius:4px;color:gray;transition:background-color .2s,color .2s;cursor:pointer;display:flex;align-items:center;}
+.icon-btn:hover{background:#282828;color:#b3b3b3;}
+
+.console-panel{width:100%;display:flex;flex-direction:column;flex-shrink:0;transition:height .2s;}
+.console-header{flex-shrink:0;max-height:33px;height:33px;box-sizing:border-box;background:#282828;padding:7px 7px 7px 9px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;}
+.console-header #out-title{color:#c5c5c5;font-size:11px;font-weight:600;letter-spacing:.66px;}
+#chevron{background:none;border:none;cursor:pointer;color:gray;padding:2px 2px 1px;margin-top:1px;border-radius:4px;display:flex;transition:transform .3s,color .3s;}
+#chevron:hover{background-color:#1f1f1f;}
+#chevron[data-state=closed]{transform:rotate(180deg);}
+.output-box{flex:1;background:#191818;overflow-y:auto;padding:4px 8px;font-family:'Cascadia Code','Fira Code',Consolas,monospace;font-size:12px;line-height:1.65;max-width:calc(100vw - 190px);}
+.output-box::-webkit-scrollbar{width:5px;}
+.output-box::-webkit-scrollbar-thumb{background:gray;border-radius:10px;}
+.out-line{display:flex;gap:8px;white-space:pre-wrap;word-break:break-all;}
+.out-ts{color:#555;user-select:none;flex-shrink:0;min-width:54px;}
+.out-0 .out-msg{color:#c5c5c5;}
+.out-1 .out-msg{color:#e5c07b;}
+.out-2 .out-msg{color:#e06c75;}
+.out-3 .out-msg{color:#61afef;}
+
+.right-panel{min-width:190px;width:190px;height:100%;border-left:1px solid #2c2c2c;background:#1f1f1f;box-shadow:-4px 0 12px rgba(0,0,0,.25);display:flex;flex-direction:column;flex-shrink:0;}
+.search-bar{min-width:190px;display:flex;padding:3px;box-sizing:border-box;border-bottom:1px solid #2c2c2c;flex-shrink:0;}
+.search-wrap{box-sizing:border-box;display:flex;align-items:center;padding:0 6px;gap:6px;width:100%;height:100%;background:#282828;border-radius:4px;border:1px solid #2c2c2c;}
+.search-wrap .si{color:gray;display:flex;}
+.search-wrap input{background:transparent;border:none;width:100%;color:#c5c5c5;font-size:12px;outline:none;padding:5px 0;}
+.search-wrap input::placeholder{color:gray;}
+.script-list{flex:1;min-height:0;display:flex;flex-direction:column;}
+.script-scroll{flex:1;overflow-y:auto;overflow-x:hidden;}
+.script-scroll::-webkit-scrollbar{width:3px;}
+.script-scroll::-webkit-scrollbar-thumb{background:gray;border-radius:3px;}
+.ws-section{width:100%;display:flex;flex-direction:column;}
+.ws-section[data-state=open] .ws-header .ws-chev{transform:rotate(180deg);}
+.ws-header{width:100%;padding:6px 8px;box-sizing:border-box;background:#282828;color:#c5c5c5;display:flex;align-items:center;gap:8px;border-bottom:1px solid #2c2c2c;transition:background-color .2s;cursor:pointer;user-select:none;}
+.ws-header:hover{background:#353535;}
+.ws-header .ws-ttl{color:gray;font-size:14px;font-weight:600;width:100%;text-align:start;}
+.ws-chev{transition:transform .3s;flex-shrink:0;}
+.script-item{width:100%;display:flex;gap:4px;align-items:center;padding:3px 8px;transition:all .2s;cursor:pointer;box-sizing:border-box;}
+.script-item:hover{background:#282828;}
+.script-item:hover .sname{color:#c5c5c5;}
+.sname{font-size:13px;font-weight:400;color:gray;text-overflow:ellipsis;white-space:nowrap;overflow:hidden;flex:1;}
+.no-scripts{padding:8px;color:#555;font-size:12px;font-style:italic;}
+
+.inst-container{width:100%;box-sizing:border-box;padding:3px;flex-shrink:0;border-top:1px solid #2c2c2c;position:relative;}
+.inst-trigger{padding:6px;width:100%;background:#282828;border:1px solid #2c2c2c;border-radius:4px;display:flex;align-items:center;gap:6px;cursor:pointer;}
+.inst-trigger:focus{outline:none;}
+.inst-trigger:hover{background:#353535;}
+.inst-trigger #inst-title{color:gray;font-size:14px;font-weight:600;width:100%;text-align:start;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.inst-drop{position:absolute;bottom:100%;left:3px;right:3px;background:#1f1f1f;border:1px solid #2c2c2c;border-radius:4px;box-shadow:0 -5px 12px rgba(0,0,0,.4);display:none;flex-direction:column;gap:2px;padding:3px;z-index:100;max-height:200px;overflow-y:auto;}
+.inst-drop.open{display:flex;}
+.inst-item{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:3px;color:gray;font-size:13px;cursor:pointer;background:none;border:none;text-align:left;width:100%;transition:background .15s,color .15s;}
+.inst-item:hover{background:#282828;color:#c5c5c5;}
+.inst-item.active{background:#282828;color:#c5c5c5;}
+.inst-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.kill-btn{background:transparent;border:none;color:#555;padding:2px 4px;border-radius:3px;cursor:pointer;display:flex;align-items:center;transition:color .15s,background .15s;flex-shrink:0;}
+.kill-btn:hover{color:#e06c75;background:#2c1515;}
+.inst-divider{height:1px;background:#2c2c2c;margin:2px 0;}
+.inst-empty{padding:6px 8px;color:#555;font-size:12px;font-style:italic;}
+
+.settings-wrap{width:100%;height:100%;display:flex;padding-top:4px;}
+.settings-tabs{height:100%;padding:2px 6px;display:flex;flex-direction:column;gap:6px;border-right:1px solid #2c2c2c;flex-shrink:0;}
+.stab{border:1px solid transparent;display:flex;align-items:center;justify-content:center;padding:6px 12px;border-radius:4px;transition:background-color .2s,color .2s,border .2s;color:gray;background:none;cursor:pointer;}
+.stab:hover{background:#282828;color:#c5c5c5;}
+.stab[data-active=true]{border:1px solid #2c2c2c;background:#282828;color:#c5c5c5;}
+.settings-body{border-top:1px solid #2c2c2c;width:100%;height:100%;display:flex;flex-direction:column;gap:6px;padding:6px;box-sizing:border-box;overflow-y:auto;}
+.s-hdr{width:100%;padding:6px 8px;box-sizing:border-box;border-radius:4px;background:#282828;color:#c5c5c5;font-size:8px;display:flex;align-items:center;gap:8px;}
+.s-row{width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px;}
+.s-desc{display:flex;flex-direction:column;gap:2px;width:100%;}
+.s-title{color:#c5c5c5;font-size:12px;font-weight:600;}
+.s-sub{color:gray;font-size:10px;}
+.s-act{display:flex;gap:6px;align-items:center;flex-shrink:0;}
+.sbtn{background-color:#28282899;color:gray;padding:5px 10px;border:1px solid rgba(44,44,44,.6);border-radius:4px;font-size:11px;cursor:pointer;transition:background-color .2s,color .2s;white-space:nowrap;}
+.sbtn:hover{background-color:#31313199;color:#8d8d8d;}
+
+#creds-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1000;display:none;align-items:center;justify-content:center;}
+#creds-overlay.open{display:flex;}
+#creds-box{background:#1f1f1f;border:1px solid #2c2c2c;border-radius:6px;padding:20px;width:280px;display:flex;flex-direction:column;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,.6);}
+#creds-box h3{color:#c5c5c5;font-size:13px;font-weight:700;margin:0;}
+.cfield{display:flex;flex-direction:column;gap:4px;}
+.cfield label{color:gray;font-size:11px;}
+.cfield input{background:#282828;border:1px solid #2c2c2c;border-radius:4px;color:#c5c5c5;font-size:12px;padding:6px 8px;outline:none;font-family:inherit;transition:border-color .2s;}
+.cfield input:focus{border-color:#444;}
+.crow{display:flex;gap:8px;justify-content:flex-end;}
+.crow button{padding:5px 14px;border-radius:4px;border:1px solid #2c2c2c;font-size:12px;cursor:pointer;font-family:inherit;transition:background .2s,color .2s;}
+.crow .cancel{background:#282828;color:gray;}
+.crow .cancel:hover{color:#c5c5c5;}
+.crow .save-btn{background:#333;color:#c5c5c5;}
+.crow .save-btn:hover{background:#3a3a3a;}
+
+#save-ws-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:1000;display:none;align-items:center;justify-content:center;}
+#save-ws-overlay.open{display:flex;}
+#save-ws-box{background:#1f1f1f;border:1px solid #2c2c2c;border-radius:6px;padding:20px;width:280px;display:flex;flex-direction:column;gap:12px;box-shadow:0 8px 32px rgba(0,0,0,.6);}
+#save-ws-box h3{color:#c5c5c5;font-size:13px;font-weight:700;margin:0;}
+
+#login-screen{position:fixed;inset:0;background:#1f1f1f;z-index:2000;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+#login-screen.hidden{display:none;}
+#login-box{display:flex;flex-direction:column;align-items:center;gap:14px;width:260px;}
+.lb-brand{color:#fff;font-size:22px;font-weight:800;letter-spacing:1px;margin-bottom:4px;}
+.lb-brand .dot{color:#6a6a6a;}
+.lb-sub{color:#6a6a6a;font-size:11px;margin-bottom:6px;}
+.lfield{width:100%;display:flex;flex-direction:column;gap:4px;}
+.lfield label{color:#6a6a6a;font-size:11px;font-weight:500;}
+.lfield input{width:100%;box-sizing:border-box;background:#282828;border:1px solid #2c2c2c;border-radius:4px;color:#c5c5c5;font-size:12px;padding:7px 10px;outline:none;font-family:inherit;transition:border-color .2s;}
+.lfield input:focus{border-color:#444;}
+.lerr{color:#e06c75;font-size:11px;min-height:16px;text-align:center;}
+.lbtn{width:100%;padding:8px;background:#333;border:1px solid #3a3a3a;border-radius:4px;color:#c5c5c5;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .2s;}
+.lbtn:hover{background:#3a3a3a;}
+.lbtn:disabled{opacity:.5;cursor:not-allowed;}
+
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:#3a3a3a;border-radius:4px;}
+::-webkit-scrollbar-thumb:hover{background:gray;}
+</style>
+</head>
+<body>
+
+<div class="resize-handle resize-n"  onmousedown="startResize(event,'n')"></div>
+<div class="resize-handle resize-s"  onmousedown="startResize(event,'s')"></div>
+<div class="resize-handle resize-w"  onmousedown="startResize(event,'w')"></div>
+<div class="resize-handle resize-e"  onmousedown="startResize(event,'e')"></div>
+<div class="resize-handle resize-nw" onmousedown="startResize(event,'nw')"></div>
+<div class="resize-handle resize-ne" onmousedown="startResize(event,'ne')"></div>
+<div class="resize-handle resize-sw" onmousedown="startResize(event,'sw')"></div>
+<div class="resize-handle resize-se" onmousedown="startResize(event,'se')"></div>
+
+<div class="page-container" id="app">
+  <div class="title-bar" id="titlebar">
+    <div class="heading">
+      <span class="branding">AWP<span class="dot">.</span>GG</span>
+      <div class="sep"></div>
+      <div style="position:relative;">
+        <button class="dd-btn" id="dropBtn" data-state="closed" onclick="toggleDrop(event)">
+          <iconify-icon icon="ph:file" width="14" height="14" style="color:#c5c5c5;flex-shrink:0;"></iconify-icon>
+          <span class="lbl" id="dropLabel">Scripting</span>
+          <iconify-icon icon="tabler:chevron-down" class="caret" width="14" height="14"></iconify-icon>
+        </button>
+        <div class="dd-menu" id="dropMenu">
+          <button class="dd-item" data-active="true" id="ddS" onclick="goPage('scripting',event)">
+            <iconify-icon icon="ph:file" width="13" height="13"></iconify-icon>
+            <span class="itm">Scripting</span>
+          </button>
+          <button class="dd-item" data-active="false" id="ddG" onclick="goPage('settings',event)">
+            <iconify-icon icon="ant-design:tool-filled" width="13" height="13"></iconify-icon>
+            <span class="itm">Settings</span>
+          </button>
+        </div>
+      </div>
+      <button class="logout-btn" title="Logout" onclick="doLogout()">
+        <iconify-icon icon="tabler:logout" width="15" height="15"></iconify-icon>
+      </button>
+    </div>
+    <div class="win-ctrls">
+      <button class="ctrl" onclick="wc('minimize')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+      <button class="ctrl" onclick="wc('maximize')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="1"/></svg></button>
+      <button class="ctrl close" onclick="wc('close')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+  </div>
+
+  <div id="pgScripting" class="content-area">
+    <div class="script-area">
+      <div class="editor-wrap">
+        <div class="panel-group">
+          <div class="tab-bar" id="tabBar"></div>
+          <div class="text-editor">
+            <div class="editor-container">
+              <div class="line-nums" id="lineNums">1</div>
+              <pre id="hl-pre"></pre>
+              <textarea id="editor-area" spellcheck="false"></textarea>
+            </div>
+          </div>
+          <div class="editor-toolbar">
+            <button class="btn" id="btn-exec" data-active="false" disabled onclick="doExec()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 6c0-.852.986-1.297 1.623-.783l.084.076 6 6a1 1 0 0 1 .083 1.32l-.083.094-6 6-.094.083-.077.054-.096.054-.036.017-.067.027-.108.032-.053.01-.06.01-.057.004-.059.002-.059-.002-.058-.005-.06-.009-.052-.01-.108-.032-.067-.027-.132-.07-.09-.065-.081-.073-.083-.094-.054-.077-.054-.096-.017-.036-.027-.067-.032-.108-.01-.053-.01-.06-.004-.057-.002-12.059z"/></svg>
+              <span>Execute</span>
+            </button>
+            <button class="btn" data-active="true" onclick="doClear()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7l16 0"/><path d="M10 11l0 6"/><path d="M14 11l0 6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12"/><path d="M9 7v-3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/></svg>
+              <span>Clear</span>
+            </button>
+            <button class="btn" data-active="true" onclick="doOpen()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 19l2.757-7.351a1 1 0 0 1 .936-.649h12.307a1 1 0 0 1 .986 1.164l-.996 5.211a2 2 0 0 1-1.964 1.625h-14.026a2 2 0 0 1-2-2v-11a2 2 0 0 1 2-2h4l3 3h7a2 2 0 0 1 2 2v2"/></svg>
+              <span>Open</span>
+            </button>
+            <button class="btn" id="btn-open-exec" data-active="false" disabled onclick="doOpenExec()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21h-10a2 2 0 0 1-2-2v-14a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/><path d="M10 13l-1 2 1 2"/><path d="M14 13l1 2-1 2"/></svg>
+              <span>Execute</span>
+            </button>
+            <button class="btn" data-active="true" onclick="doSave()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 4h10l4 4v10a2 2 0 0 1-2 2h-12a2 2 0 0 1-2-2v-12a2 2 0 0 1 2-2"/><path d="M12 14m-2 0a2 2 0 1 0 4 0a2 2 0 1 0-4 0"/><path d="M14 4l0 4-6 0 0-4"/></svg>
+              <span>Save</span>
+            </button>
+
+            <div class="tb-sep"></div>
+            <div class="proc-btns">
+              <button class="icon-btn" onclick="doAttach()" title="Attach to Roblox">
+                <iconify-icon id="attach-icon" icon="ph:plugs" width="24" height="24"></iconify-icon>
+              </button>
+              <button class="icon-btn" onclick="doLaunch()" title="Launch Roblox">
+                <iconify-icon icon="heroicons:rocket-launch" width="24" height="24"></iconify-icon>
+              </button>
+            </div>
+          </div>
+          <div class="console-panel" id="consolePanel" style="height:130px;">
+            <div class="console-header" onclick="toggleConsole()">
+              <span id="out-title">Output</span>
+              <button id="chevron" data-state="open"><iconify-icon icon="tabler:chevron-up" width="14" height="14"></iconify-icon></button>
+            </div>
+            <div class="output-box" id="outputBox"></div>
+          </div>
+        </div>
+      </div>
+      <div class="right-panel">
+        <div class="search-bar">
+          <div class="search-wrap">
+            <span class="si"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0-14 0"/><path d="M21 21l-6-6"/></svg></span>
+            <input type="text" placeholder="Search..." oninput="filterScripts(this.value)" autocomplete="off"/>
+          </div>
+        </div>
+        <div class="script-list">
+          <div class="script-scroll">
+            <div class="ws-section" data-state="open" id="wsSection">
+              <div class="ws-header" onclick="toggleWS()">
+                <iconify-icon icon="streamline:workspace-desk" width="16" height="16" style="color:#c5c5c5;flex-shrink:0;"></iconify-icon>
+                <span class="ws-ttl">Workspace</span>
+                <iconify-icon class="ws-chev" icon="tabler:chevron-up" width="12" height="12" style="color:gray;"></iconify-icon>
+              </div>
+              <div id="scriptItems"><div class="no-scripts">No scripts found</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="inst-container">
+          <button class="inst-trigger" onclick="toggleInstDrop()" id="instBtn">
+            <iconify-icon icon="tabler:user" width="16" height="16" style="color:gray;flex-shrink:0;"></iconify-icon>
+            <span id="inst-title">None</span>
+            <iconify-icon icon="tabler:chevron-up" width="10" height="10" style="color:gray;flex-shrink:0;margin-left:auto;"></iconify-icon>
+          </button>
+          <div class="inst-drop" id="instDrop"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="pgSettings" class="content-area" style="display:none;">
+    <div class="settings-wrap">
+      <div class="settings-tabs">
+        <button class="stab" data-active="true" onclick="setStab('general',this)" title="General">
+          <iconify-icon icon="ant-design:tool-filled" width="16" height="16"></iconify-icon>
+        </button>
+        <button class="stab" data-active="false" onclick="setStab('editor',this)" title="Editor">
+          <iconify-icon icon="flowbite:code-outline" width="16" height="16"></iconify-icon>
+        </button>
+      </div>
+      <div class="settings-body" id="settingsBody"></div>
+    </div>
+  </div>
+</div>
+
+<div id="creds-overlay">
+  <div id="creds-box">
+    <h3>Credentials</h3>
+    <div class="cfield"><label>Username</label><input type="text" id="creds-user" placeholder="Username" autocomplete="off" onkeydown="if(event.key==='Enter')saveCreds()"/></div>
+    <div class="cfield"><label>Password</label><input type="password" id="creds-pass" placeholder="Password" autocomplete="off" onkeydown="if(event.key==='Enter')saveCreds()"/></div>
+    <div class="crow">
+      <button class="cancel" onclick="closeCreds()">Cancel</button>
+      <button class="save-btn" onclick="saveCreds()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="save-ws-overlay">
+  <div id="save-ws-box">
+    <h3>Save to Workspace</h3>
+    <div class="cfield"><label>File name</label><input type="text" id="ws-fname" placeholder="myscript.lua" autocomplete="off" onkeydown="if(event.key==='Enter')doSaveWs()"/></div>
+    <div class="crow">
+      <button class="cancel" onclick="closeSaveWs()">Cancel</button>
+      <button class="save-btn" onclick="doSaveWs()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="login-screen">
+  <div id="login-box">
+    <div class="lb-brand">AWP<span class="dot">.</span>GG</div>
+    <div class="lb-sub">Enter your Cosmic credentials to continue</div>
+    <div class="lfield"><label>Username:</label><input type="text" id="login-user" placeholder="Username" autocomplete="off" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+    <div class="lfield"><label>Password:</label><input type="password" id="login-pass" placeholder="Password" autocomplete="off" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+    <div class="lerr" id="login-err"></div>
+    <button class="lbtn" id="login-btn" onclick="doLogin()">Login</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+var _inv = null;
+
+function invoke(cmd, args) {
+  if (!_inv) return Promise.resolve(null);
+  return _inv(cmd, args || {});
+}
+
+function el(id) { return document.getElementById(id); }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escH(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function startResize(e, dir) {
+  e.preventDefault();
+  var T = window.__TAURI__;
+  if (!T || !T.window || !T.window.getCurrentWindow) return;
+  var d = {
+    n:'North', s:'South', e:'East', w:'West',
+    nw:'NorthWest', ne:'NorthEast', sw:'SouthWest', se:'SouthEast'
+  };
+  var rd = T.window.ResizeDirection;
+  T.window.getCurrentWindow().startResizeDragging(rd ? rd[d[dir]] : d[dir]);
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+  var T = window.__TAURI__;
+  if (!T) return;
+  _inv = T.core ? T.core.invoke : (T.tauri ? T.tauri.invoke : null);
+  var listen = T.event ? T.event.listen : null;
+  if (!listen || !_inv) return;
+
+  listen('output',              function(e) { appendOut(e.payload.msg, e.payload.status); });
+  listen('clients',             function(e) { updateInst(e.payload); });
+  listen('client_connected',    function(e) { if(e.payload&&e.payload.label) instLabels[e.payload.pid]=e.payload.label; invoke('get_clients_list').then(updateInst); });
+  listen('client_disconnected', function(e) { delete instLabels[e.payload]; invoke('get_clients_list').then(updateInst); });
+  listen('user_info',           function(e) { instLabels[e.payload.pid]=e.payload.label; invoke('get_clients_list').then(updateInst); });
+  listen('attach_result',       function(e) {
+    var ok = e.payload.ok;
+    appendOut((ok ? '\u2713 ' : '\u2717 ') + (e.payload.label || 'PID ' + e.payload.pid) + ': ' + e.payload.msg, ok ? 3 : 2);
+    if (ok) invoke('get_clients_list').then(updateInst);
+  });
+  listen('inject_start',    function() { var ic=el('attach-icon'); if(ic) ic.setAttribute('icon','ph:plugs-connected'); });
+  listen('inject_end',      function() { var ic=el('attach-icon'); if(ic) ic.setAttribute('icon', connPids.length>0 ? 'ph:plugs-connected' : 'ph:plugs'); });
+  listen('scripts',         function(e) { allScripts = e.payload||[]; renderScripts(filterQ); });
+  listen('file_content',    function(e) { openFileInTab(e.payload.path, e.payload.content); });
+  listen('load_settings',   function(e) { applySettings(e.payload); });
+  listen('need_credentials',function()  { openCreds(); });
+  listen('credentials_status', function(e) { if(e.payload&&e.payload.hasCredentials) savedUser=e.payload.username; });
+
+  invoke('load_settings_cmd').then(function(s) { if(s) applySettings(s); });
+  invoke('get_scripts_list').then(function(s) { allScripts=s||[]; renderScripts(filterQ); });
+  invoke('get_saved_credentials').then(function(r) {
+    if (r && r.hasCredentials) {
+      savedUser = r.username;
+      hideLogin();
+    } else {
+      showLogin();
+    }
+  });
+});
+
+var page = 'scripting', stab = 'general', savedUser = '';
+var tabs = [{id:1, title:'Untitled Tab', content:'', path:null}];
+var atid = 1, tctr = 1, selPid = 0, consOpen = true, consH = 130, wsOpen = true;
+var topmostOn = false, autoInject = false, consoleVisible = true;
+var instLabels = {}, connPids = [], dropOpen = false, instOpen = false;
+var allScripts = [], filterQ = '';
+var renamingTabId = null;
+
+window.onload = function() {
+  renderTabs();
+  renderScripts('');
+  setEditorVal(tabs[0].content);
+  renderSettings();
+
+  el('editor-area').addEventListener('input', onEditorInput);
+  el('editor-area').addEventListener('scroll', syncScroll);
+  el('editor-area').addEventListener('keydown', edKey);
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'F5') { e.preventDefault(); doExec(); }
+    if ((e.ctrlKey||e.metaKey) && e.key === 's') { e.preventDefault(); doSave(); }
+    if ((e.ctrlKey||e.metaKey) && e.key === 'Enter') { e.preventDefault(); doExec(); }
+    if (e.key === 'Escape') { closeDrop(); closeInstDrop(); closeCreds(); closeSaveWs(); }
+  });
+
+  el('titlebar').addEventListener('mousedown', function(e) {
+    if (e.button !== 0) return;
+    if (e.target.closest('button') || e.target.closest('.win-ctrls') || e.target.closest('.dd-menu') || e.target.closest('.dd-btn')) return;
+    var T = window.__TAURI__;
+    if (T && T.window && T.window.getCurrentWindow) {
+      T.window.getCurrentWindow().startDragging();
+    } else {
+      invoke('drag_window');
+    }
+  });
+
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('#dropBtn') && !e.target.closest('#dropMenu')) closeDrop();
+    if (!e.target.closest('#instBtn') && !e.target.closest('#instDrop')) closeInstDrop();
+  });
+};
+
+function applySettings(raw) {
+  var s; try { s = JSON.parse(typeof raw==='string' ? raw : JSON.stringify(raw)); } catch(_) { s = {}; }
+  if (s.topmost) { topmostOn=true; invoke('set_always_on_top',{enabled:true}); }
+  if (s.autoInject) { autoInject=true; invoke('set_auto_inject',{enabled:true}); }
+  if (s.consoleVisible === false) { consoleVisible=false; applyConsoleVisible(); }
+  renderSettings();
+}
+
+function persist() {
+  invoke('save_settings_cmd', {json: JSON.stringify({topmost:topmostOn, autoInject:autoInject, consoleVisible:consoleVisible})});
+}
+
+function applyConsoleVisible() {
+  var p = el('consolePanel');
+  if (!p) return;
+  if (!consoleVisible) {
+    p.style.display = 'none';
+  } else {
+    p.style.display = '';
+    p.style.height = consH + 'px';
+    el('outputBox').style.display = '';
+    el('chevron').setAttribute('data-state', consOpen ? 'open' : 'closed');
+  }
+}
+
+function goPage(p, e) {
+  if (e) e.stopPropagation();
+  closeDrop(); page = p;
+  el('pgScripting').style.display = p==='scripting' ? 'flex' : 'none';
+  el('pgSettings').style.display  = p==='settings'  ? 'flex' : 'none';
+  el('dropLabel').textContent = p==='scripting' ? 'Scripting' : 'Settings';
+  el('ddS').setAttribute('data-active', p==='scripting' ? 'true' : 'false');
+  el('ddG').setAttribute('data-active', p==='settings'  ? 'true' : 'false');
+}
+
+function toggleDrop(e) {
+  e.stopPropagation(); dropOpen = !dropOpen;
+  el('dropMenu').classList.toggle('open', dropOpen);
+  el('dropBtn').setAttribute('data-state', dropOpen ? 'open' : 'closed');
+}
+
+function closeDrop() {
+  dropOpen = false;
+  el('dropMenu').classList.remove('open');
+  el('dropBtn').setAttribute('data-state', 'closed');
+}
+
+function wc(a) {
+  invoke(a==='minimize' ? 'minimize_window' : a==='maximize' ? 'maximize_window' : 'close_window');
+}
+
+function renderTabs() {
+  var bar = el('tabBar'); bar.innerHTML = '';
+  tabs.forEach(function(t) {
+    var d = document.createElement('div');
+    d.className = 'tab';
+    d.setAttribute('data-active', t.id===atid ? 'true' : 'false');
+
+    var icon = document.createElement('iconify-icon');
+    icon.setAttribute('icon', 'ph:file');
+    icon.setAttribute('width', '16');
+    icon.setAttribute('height', '16');
+    icon.style.cssText = 'color:gray;flex-shrink:0;';
+
+    if (renamingTabId === t.id) {
+      var inp = document.createElement('input');
+      inp.className = 'tab-rename-input';
+      inp.value = t.title;
+      inp.onclick = function(ev) { ev.stopPropagation(); };
+      inp.onblur = function() { commitRename(t.id, inp.value); };
+      inp.onkeydown = function(ev) {
+        if (ev.key === 'Enter') { ev.preventDefault(); inp.blur(); }
+        if (ev.key === 'Escape') { renamingTabId = null; renderTabs(); }
+        ev.stopPropagation();
+      };
+      d.appendChild(icon);
+      d.appendChild(inp);
+      setTimeout(function() { inp.focus(); inp.select(); }, 10);
+    } else {
+      var span = document.createElement('span');
+      span.className = 'tab-title';
+      span.textContent = t.title;
+      span.ondblclick = function(ev) { ev.stopPropagation(); startRename(t.id); };
+      d.appendChild(icon);
+      d.appendChild(span);
+    }
+
+    var cl = document.createElement('button');
+    cl.className = 'close-tab';
+    cl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+    cl.onclick = function(ev) { ev.stopPropagation(); closeTab(t.id); };
+    d.appendChild(cl);
+
+    d.addEventListener('click', function(ev) {
+      if (ev.target.closest('.close-tab') || ev.target.closest('.tab-rename-input')) return;
+      switchTab(t.id);
+    });
+    bar.appendChild(d);
+  });
+
+  var nb = document.createElement('button');
+  nb.className = 'new-tab-btn'; nb.title = 'New tab';
+  nb.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+  nb.onclick = newTab;
+  bar.appendChild(nb);
+}
+
+function startRename(id) {
+  renamingTabId = id;
+  renderTabs();
+}
+
+function commitRename(id, val) {
+  var v = val.trim();
+  var t = tabs.find(function(x) { return x.id===id; });
+  if (t) t.title = v || 'Untitled Tab';
+  renamingTabId = null;
+  renderTabs();
+}
+
+function switchTab(id) { saveTab(); atid=id; var t=tabs.find(function(x){return x.id===id;}); setEditorVal(t?t.content:''); renderTabs(); }
+function newTab() { saveTab(); tctr++; tabs.push({id:tctr,title:'Untitled Tab',content:'',path:null}); switchTab(tctr); }
+
+function closeTab(id) {
+  if (tabs.length===1) { showToast('Cannot close last tab'); return; }
+  tabs = tabs.filter(function(t) { return t.id!==id; });
+  if (atid===id) switchTab(tabs[tabs.length-1].id); else renderTabs();
+}
+
+function saveTab() { var t=tabs.find(function(x){return x.id===atid;}); if(t) t.content=el('editor-area').value; }
+
+function openFileInTab(path, content) {
+  saveTab();
+  var name = path.split('\\').pop().split('/').pop();
+  var title = name.replace(/\.[^.]+$/, '');
+  var existing = tabs.find(function(t) { return t.path===path; });
+  if (existing) { switchTab(existing.id); return; }
+  tctr++; tabs.push({id:tctr, title:title, content:content, path:path});
+  switchTab(tctr);
+}
+
+function renderScripts(q) {
+  var c = el('scriptItems'); c.innerHTML = '';
+  if (!wsOpen) return;
+  var list = allScripts.filter(function(s) { return !q || s.name.toLowerCase().indexOf(q.toLowerCase())!==-1; });
+  if (list.length===0) { c.innerHTML='<div class="no-scripts">No scripts found</div>'; return; }
+  list.forEach(function(s) {
+    var d = document.createElement('div');
+    d.className = 'script-item';
+    d.innerHTML = '<iconify-icon icon="line-md:file" width="14" height="14" style="color:gray;flex-shrink:0;"></iconify-icon><span class="sname">'+esc(s.name)+'</span>';
+    d.onclick = function() { invoke('read_file', {path:s.path}); };
+    c.appendChild(d);
+  });
+}
+
+function filterScripts(q) { filterQ=q; renderScripts(q); }
+
+function toggleWS() {
+  wsOpen = !wsOpen;
+  el('wsSection').setAttribute('data-state', wsOpen ? 'open' : 'closed');
+  if (wsOpen) renderScripts(filterQ); else el('scriptItems').innerHTML='';
+}
+
+function setEditorVal(v) { el('editor-area').value=v; updateHL(); updateNums(); }
+function onEditorInput() { updateHL(); updateNums(); saveTab(); }
+function updateHL() { el('hl-pre').innerHTML = luaHL(el('editor-area').value); }
+
+function updateNums() {
+  var lines = el('editor-area').value.split('\n');
+  var out = '';
+  for (var i=1; i<=Math.max(lines.length,1); i++) out+=i+'\n';
+  el('lineNums').textContent = out;
+}
+
+function syncScroll() {
+  var ed = el('editor-area');
+  el('hl-pre').scrollTop = ed.scrollTop; el('hl-pre').scrollLeft = ed.scrollLeft;
+  el('lineNums').scrollTop = ed.scrollTop;
+}
+
+function edKey(e) {
+  var ed = el('editor-area'); var s=ed.selectionStart, en=ed.selectionEnd;
+  if (e.key==='Tab') {
+    e.preventDefault();
+    ed.value = ed.value.substring(0,s)+'  '+ed.value.substring(en);
+    ed.selectionStart=ed.selectionEnd=s+2; updateHL(); updateNums(); return;
+  }
+  var pairs = {'(':')','{':'}','[':']','"':'"',"'":"'"};
+  var closers = new Set([')','}',']']); var sym = new Set(['"',"'"]);
+  if (sym.has(e.key)&&s===en&&s<ed.value.length&&ed.value[s]===e.key) { e.preventDefault(); ed.selectionStart=ed.selectionEnd=s+1; return; }
+  if (pairs[e.key]) { e.preventDefault(); var open=e.key,close=pairs[e.key],sel=ed.value.substring(s,en); ed.value=ed.value.substring(0,s)+open+sel+close+ed.value.substring(en); ed.selectionStart=ed.selectionEnd=s+1; updateHL(); updateNums(); return; }
+  if (closers.has(e.key)&&s===en&&s<ed.value.length&&ed.value[s]===e.key) { e.preventDefault(); ed.selectionStart=ed.selectionEnd=s+1; return; }
+  if (e.key==='Backspace'&&s===en&&s>0) { var prev=ed.value[s-1],nxt=ed.value[s]; if(pairs[prev]&&pairs[prev]===nxt){e.preventDefault();ed.value=ed.value.substring(0,s-1)+ed.value.substring(s+1);ed.selectionStart=ed.selectionEnd=s-1;updateHL();updateNums();return;} }
+}
+
+function luaHL(code) {
+  var s = code.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  var R = [], ctr = 0;
+  function P(text,cls){
+    var id = '\x02S'+ctr+'E\x03';
+    R[ctr] = '<span class="'+cls+'">'+text+'</span>';
+    ctr++;
+    return id;
+  }
+  s=s.replace(/--\[\[[\s\S]*?\]\]/g,function(m){return P(m,'lc');});
+  s=s.replace(/\[\[[\s\S]*?\]\]/g,function(m){return P(m,'ls');});
+  s=s.replace(/--[^\n]*/g,function(m){return P(m,'lc');});
+  s=s.replace(/"(?:[^"\\]|\\.)*"/g,function(m){return P(m,'ls');});
+  s=s.replace(/'(?:[^'\\]|\\.)*'/g,function(m){return P(m,'ls');});
+  s=s.replace(/\b0x[0-9a-fA-F]+\b/g,function(m){return P(m,'ln');});
+  s=s.replace(/\b\d+\.?\d*(?:[eE][+-]?\d+)?\b/g,function(m){return P(m,'ln');});
+  s=s.replace(/\b(and|break|do|else|elseif|end|false|for|function|goto|if|in|local|nil|not|or|repeat|return|then|true|until|while)\b/g,function(m){return P(m,'lk');});
+  s=s.replace(/\b(print|warn|error|math|string|table|game|workspace|script|pcall|xpcall|type|tostring|tonumber|pairs|ipairs|next|select|rawget|rawset|rawequal|rawlen|require|task|wait|spawn|delay|coroutine|Vector3|CFrame|Color3|Instance|Enum|_G|_ENV)\b/g,function(m){return P(m,'lb');});
+  s=s.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)(?=\s*[(:])/g,function(m,fn){return P(fn,'lf');});
+  s=s.replace(/\x02S(\d+)E\x03/g,function(m,i){return R[parseInt(i)];});
+  return s;
+}
+
+function updateButtonStates() {
+  var has = connPids.length > 0;
+  var be=el('btn-exec'), bo=el('btn-open-exec');
+  be.setAttribute('data-active', has?'true':'false'); be.disabled=!has;
+  bo.setAttribute('data-active', has?'true':'false'); bo.disabled=!has;
+  var ic=el('attach-icon');
+  if (ic) ic.setAttribute('icon', has ? 'ph:plugs-connected' : 'ph:plugs');
+}
+
+function doExec() {
+  saveTab(); var sc=el('editor-area').value;
+  if (!sc.trim()) { showToast('Nothing to execute'); return; }
+  invoke('execute_script', {pid:selPid, script:sc});
+  appendOut('Executing script\u2026', 3);
+}
+
+function doClear() { el('editor-area').value=''; saveTab(); updateHL(); updateNums(); }
+
+function doOpen() {
+  var inp=document.createElement('input'); inp.type='file'; inp.accept='.lua,.luau,.txt';
+  inp.onchange=function(ev){
+    var f=ev.target.files[0]; if(!f) return;
+    var r=new FileReader();
+    r.onload=function(e2){
+      saveTab(); var t=tabs.find(function(x){return x.id===atid;});
+      if(t){t.content=e2.target.result;t.title=f.name.replace(/\.[^.]+$/,'');}
+      setEditorVal(e2.target.result); renderTabs();
+    }; r.readAsText(f);
+  }; inp.click();
+}
+
+function doOpenExec() {
+  var inp=document.createElement('input'); inp.type='file'; inp.accept='.lua,.luau,.txt';
+  inp.onchange=function(ev){
+    var f=ev.target.files[0]; if(!f) return;
+    var r=new FileReader();
+    r.onload=function(e2){
+      saveTab(); var t=tabs.find(function(x){return x.id===atid;});
+      if(t){t.content=e2.target.result;t.title=f.name.replace(/\.[^.]+$/,'');}
+      setEditorVal(e2.target.result); renderTabs();
+      invoke('execute_script',{pid:selPid,script:e2.target.result});
+      appendOut('Executing '+f.name+'\u2026', 3);
+    }; r.readAsText(f);
+  }; inp.click();
+}
+
+function doSave() {
+  saveTab(); var t=tabs.find(function(x){return x.id===atid;});
+  var content=t?t.content:'';
+  var fname=(t&&t.title!=='Untitled Tab'?t.title:'script')+'.lua';
+  var blob=new Blob([content],{type:'text/plain'});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=fname.replace(/[^a-z0-9_\-\.]/gi,'_'); a.click();
+  showToast('Saved '+a.download);
+}
+
+function openSaveWs() {
+  var t=tabs.find(function(x){return x.id===atid;});
+  var suggested = t && t.title!=='Untitled Tab' ? t.title+'.lua' : '';
+  el('ws-fname').value = suggested;
+  el('save-ws-overlay').classList.add('open');
+  setTimeout(function(){ el('ws-fname').focus(); el('ws-fname').select(); }, 50);
+}
+
+function closeSaveWs() { el('save-ws-overlay').classList.remove('open'); }
+
+function doSaveWs() {
+  saveTab(); var t=tabs.find(function(x){return x.id===atid;});
+  var content = t ? t.content : '';
+  var name = el('ws-fname').value.trim() || (t&&t.title!=='Untitled Tab'?t.title:'script');
+  closeSaveWs();
+  invoke('save_to_workspace', {name:name, content:content}).then(function(fname) {
+    if (fname) showToast('Saved to workspace: '+fname);
+  }).catch(function(e) { showToast('Error: '+e); });
+}
+
+function doAttach() {
+  if (!savedUser) { openCreds(function(){ invoke('attach_roblox'); }); return; }
+  appendOut('Attaching\u2026', 3);
+  invoke('attach_roblox');
+}
+
+function doLaunch() { appendOut('Launching Roblox\u2026', 3); invoke('launch_roblox'); }
+
+function ts() { var d=new Date(); return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)+':'+('0'+d.getSeconds()).slice(-2); }
+
+function appendOut(msg, status) {
+  if (!consoleVisible) return;
+  var box=el('outputBox');
+  var line=document.createElement('div');
+  line.className='out-line out-'+(status||0);
+  line.innerHTML='<span class="out-ts">'+ts()+'</span><span class="out-msg">'+escH(String(msg))+'</span>';
+  box.appendChild(line); box.scrollTop=box.scrollHeight;
+  if (!consOpen) {
+    consOpen=true;
+    el('consolePanel').style.height=consH+'px';
+    el('outputBox').style.display='';
+    el('chevron').setAttribute('data-state','open');
+  }
+}
+
+function toggleConsole() {
+  consOpen = !consOpen;
+  var p=el('consolePanel'),b=el('outputBox'),c=el('chevron');
+  if (consOpen) { p.style.height=consH+'px'; b.style.display=''; c.setAttribute('data-state','open'); }
+  else { consH=parseInt(p.style.height)||130; p.style.height='33px'; b.style.display='none'; c.setAttribute('data-state','closed'); }
+}
+
+function updateInst(data) {
+  connPids=[]; var dd=el('instDrop'); dd.innerHTML='';
+  if (!data||data.length===0) {
+    connPids=[]; instLabels={};
+    dd.innerHTML='<div class="inst-empty">No instances</div>';
+    el('inst-title').textContent='None'; selPid=0; updateButtonStates(); return;
+  }
+  data.forEach(function(item) {
+    var pid=typeof item==='object'?item.pid:item;
+    var label=typeof item==='object'?item.label:('PID '+item);
+    connPids.push(pid);
+    if (!instLabels[pid]) instLabels[pid]=label;
+  });
+  if (selPid!==0&&connPids.indexOf(selPid)===-1) selPid=connPids[0];
+  if (selPid===0&&connPids.length===1) selPid=connPids[0];
+  if (connPids.length>=2) {
+    var allB=document.createElement('button');
+    allB.className='inst-item'+(selPid===0?' active':'');
+    allB.innerHTML='<iconify-icon icon="tabler:user" width="14" height="14" style="flex-shrink:0;"></iconify-icon><span class="inst-label">All Instances</span>';
+    allB.onclick=function(e){e.stopPropagation();selPid=0;refreshInstDisplay();closeInstDrop();};
+    dd.appendChild(allB);
+    var div=document.createElement('div'); div.className='inst-divider'; dd.appendChild(div);
+  }
+  connPids.forEach(function(pid) {
+    var label=instLabels[pid]||('PID '+pid);
+    var row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;width:100%;';
+    var btn=document.createElement('button');
+    btn.className='inst-item'+(pid===selPid?' active':'');
+    btn.style.flex='1';
+    btn.innerHTML='<iconify-icon icon="tabler:user" width="14" height="14" style="flex-shrink:0;"></iconify-icon><span class="inst-label">'+esc(label)+'</span>';
+    btn.onclick=function(ev){ev.stopPropagation();selPid=pid;refreshInstDisplay();closeInstDrop();};
+    var kbtn=document.createElement('button');
+    kbtn.className='kill-btn';
+    kbtn.title='Kill client';
+    kbtn.innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+    kbtn.onclick=function(ev){
+      ev.stopPropagation();
+      invoke('kill_client',{pid:pid}).then(function(){
+        appendOut('Killed client PID '+pid, 2);
+      });
+    };
+    row.appendChild(btn);
+    row.appendChild(kbtn);
+    dd.appendChild(row);
+  });
+  refreshInstDisplay(); updateButtonStates();
+}
+
+function refreshInstDisplay() {
+  var t=el('inst-title');
+  if (connPids.length===0) t.textContent='None';
+  else if (selPid===0) t.textContent='All Instances';
+  else t.textContent=instLabels[selPid]||('PID '+selPid);
+}
+
+function toggleInstDrop() { instOpen=!instOpen; el('instDrop').classList.toggle('open',instOpen); }
+function closeInstDrop() { instOpen=false; el('instDrop').classList.remove('open'); }
+
+function setStab(tab, btn) {
+  stab=tab;
+  document.querySelectorAll('.stab').forEach(function(b){ b.setAttribute('data-active', b===btn ? 'true' : 'false'); });
+  renderSettings();
+}
+
+function renderSettings() {
+  var c=el('settingsBody'); if(!c) return;
+  if (stab==='general') {
+    c.innerHTML =
+      sHdr('ant-design:tool-filled','General') +
+      sRow('Always on Top: <span style="color:#c5c5c5">'+(topmostOn?'On':'Off')+'</span>','Toggle UI always being on top.',
+           '<button class="sbtn" onclick="toggleTopmost()">'+(topmostOn?'Disable':'Enable')+'</button>') +
+      sRow('Auto Inject: <span style="color:#c5c5c5">'+(autoInject?'On':'Off')+'</span>','Auto inject new Roblox processes.',
+           '<button class="sbtn" onclick="toggleAutoInject()">'+(autoInject?'Disable':'Enable')+'</button>') +
+      sRow('Console: <span style="color:#c5c5c5">'+(consoleVisible?'Visible':'Hidden')+'</span>','Show or hide the output console.',
+           '<button class="sbtn" onclick="toggleConsoleVisible()">'+(consoleVisible?'Hide':'Show')+'</button>') +
+      sRow('Scripts Folder','Open the workspace folder.',
+           '<button class="sbtn" onclick="invoke(\'open_scripts_folder\')">Open</button>') +
+      sRow('Reset State','Clear all UI state.',
+           '<button class="sbtn" onclick="doReset()">Reset</button>') +
+      sHdr('tabler:key','Credentials') +
+      sRow('Account: <span style="color:#c5c5c5">'+(savedUser||'Not set')+'</span>','Cosmic credentials used for injection.',
+           '<button class="sbtn" onclick="openCreds()">Change</button>');
+  } else {
+    c.innerHTML =
+      sHdr('flowbite:code-outline','Editor') +
+      sRow('Reset State','Clear all UI state.',
+           '<button class="sbtn" onclick="doReset()">Reset</button>');
+  }
+}
+
+function sHdr(icon,label){return '<div class="s-hdr"><iconify-icon icon="'+icon+'" width="16" height="16"></iconify-icon><span style="font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;">'+label+'</span></div>';}
+function sRow(title,desc,action){return '<div class="s-row"><div class="s-desc"><span class="s-title">'+title+'</span><span class="s-sub">'+desc+'</span></div><div class="s-act">'+action+'</div></div>';}
+
+function toggleTopmost() { topmostOn=!topmostOn; invoke('set_always_on_top',{enabled:topmostOn}); persist(); renderSettings(); }
+function toggleAutoInject() { autoInject=!autoInject; invoke('set_auto_inject',{enabled:autoInject}); persist(); renderSettings(); }
+function toggleConsoleVisible() {
+  consoleVisible=!consoleVisible;
+  applyConsoleVisible();
+  persist(); renderSettings();
+}
+
+function doReset() {
+  tabs=[{id:1,title:'Untitled Tab',content:'',path:null}]; atid=1; tctr=1; selPid=0;
+  connPids=[]; instLabels={};
+  setEditorVal(''); el('outputBox').innerHTML='';
+  el('inst-title').textContent='None'; el('instDrop').innerHTML='';
+  renderTabs(); updateButtonStates(); showToast('State reset');
+}
+
+var _credsCb = null;
+
+function openCreds(cb) {
+  _credsCb = cb || null;
+  var u=el('creds-user'), p=el('creds-pass');
+  if (savedUser) u.value=savedUser;
+  p.value='';
+  el('creds-overlay').classList.add('open');
+  setTimeout(function(){ (savedUser&&u.value?p:u).focus(); }, 50);
+}
+
+function closeCreds() { el('creds-overlay').classList.remove('open'); _credsCb=null; }
+
+function saveCreds() {
+  var u=el('creds-user').value.trim(), p=el('creds-pass').value;
+  if (!u) { showToast('Username required'); return; }
+  invoke('set_credentials',{username:u,password:p}).then(function(ok){
+    if (ok) {
+      savedUser=u; closeCreds(); showToast('Credentials saved'); renderSettings();
+      if (_credsCb) { var cb=_credsCb; _credsCb=null; setTimeout(cb,100); }
+    } else { showToast('Failed to save credentials'); }
+  });
+}
+
+function showLogin() {
+  el('login-screen').classList.remove('hidden');
+  el('login-user').value=''; el('login-pass').value=''; el('login-err').textContent='';
+  setTimeout(function(){ el('login-user').focus(); }, 100);
+}
+
+function hideLogin() { el('login-screen').classList.add('hidden'); }
+
+function doLogin() {
+  var u=el('login-user').value.trim(), p=el('login-pass').value;
+  var btn=el('login-btn');
+  if (!u) { el('login-err').textContent='Username is required.'; return; }
+  if (!p) { el('login-err').textContent='Password is required.'; return; }
+  btn.disabled=true; btn.textContent='Logging in...'; el('login-err').textContent='';
+  invoke('set_credentials',{username:u,password:p}).then(function(ok){
+    btn.disabled=false; btn.textContent='Login';
+    if (ok) { savedUser=u; hideLogin(); renderSettings(); }
+    else { el('login-err').textContent='Failed to save credentials.'; }
+  }).catch(function(){
+    btn.disabled=false; btn.textContent='Login';
+    el('login-err').textContent='An error occurred.';
+  });
+}
+
+function doLogout() {
+  savedUser='';
+  invoke('set_credentials',{username:'',password:''});
+  showLogin();
+}
+
+var _tt;
+function showToast(msg) {
+  clearTimeout(_tt);
+  var t=el('_toast');
+  if (!t) {
+    t=document.createElement('div'); t.id='_toast';
+    Object.assign(t.style,{position:'fixed',bottom:'14px',right:'14px',background:'#282828',color:'#c5c5c5',border:'1px solid #2c2c2c',borderRadius:'4px',padding:'7px 14px',fontSize:'12px',zIndex:'9999',boxShadow:'0 4px 16px rgba(0,0,0,.6)',transition:'opacity .25s,transform .25s',pointerEvents:'none',opacity:'0',transform:'translateY(4px)'});
+    document.body.appendChild(t);
+  }
+  t.textContent=msg; t.style.opacity='1'; t.style.transform='translateY(0)';
+  _tt=setTimeout(function(){ t.style.opacity='0'; t.style.transform='translateY(4px)'; }, 2500);
+}
+</script>
+</body>
+</html>
