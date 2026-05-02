@@ -1,0 +1,41 @@
+{
+  "productName": "ui",
+  "version": "0.0.1",
+  "identifier": "com.ui.loader",
+  "build": {
+    "frontendDist": "../ui"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "ui",
+        "width": 820,
+        "height": 560,
+        "minWidth": 620,
+        "minHeight": 420,
+        "decorations": false,
+        "resizable": true,
+        "center": true,
+        "theme": "Dark"
+      }
+    ]
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "icon": [
+      "icons/32x32.png",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "nsis": {
+        "displayLanguageSelector": false,
+        "installMode": "currentUser"
+      }
+    }
+  }
+}
